@@ -17,14 +17,22 @@ const (
 	OIDifOutOctets = ".1.3.6.1.2.1.2.2.1.16"
 
 	//https://oidref.com/1.3.6.1.2.1.1.5
-	//the zero at the end is required
+	//the zero at the end is required even though it's not part of the OID
 	OIDsysName = "1.3.6.1.2.1.1.5.0"
+
+	//https://oidref.com/1.3.6.1.2.1.31.1.1.1.18.0
+	OIDifAlias = "1.3.6.1.2.1.31.1.1.1.18"
 )
 
 var zeroTime time.Time
 
 func DetectPorts(snmp *gosnmp.GoSNMP) ([]*Port, error) {
-	result, err := snmp.BulkWalkAll(OIDifDescr)
+	ifacesResult, err := snmp.BulkWalkAll(OIDifDescr)
+	if err != nil {
+		return nil, err
+	}
+
+	aliasesResult, err := snmp.BulkWalkAll(OIDifAlias)
 	if err != nil {
 		return nil, err
 	}
@@ -34,14 +42,15 @@ func DetectPorts(snmp *gosnmp.GoSNMP) ([]*Port, error) {
 		return nil, err
 	}
 
-	ports := make([]*Port, len(result))
+	ports := make([]*Port, len(ifacesResult))
 
 	for i := range ports {
 		ports[i] = &Port{
-			Name:        string(result[i].Value.([]byte)),
-			LastTxBytes: tx[i],
-			LastRxBytes: rx[i],
-			LastUpdate:  updateTime,
+			Name:       string(ifacesResult[i].Value.([]byte)),
+			Alias:      string(aliasesResult[i].Value.([]byte)),
+			LastTx:     tx[i],
+			LastRx:     rx[i],
+			LastUpdate: updateTime,
 		}
 	}
 
@@ -82,11 +91,11 @@ func UpdateRxTx(snmp *gosnmp.GoSNMP, ports []*Port) error {
 
 	for i, port := range ports {
 		secondsDelta := updateTime.Sub(port.LastUpdate).Seconds()
-		port.Rx = uint(float64(rx[i]-port.LastRxBytes) / secondsDelta)
-		port.Tx = uint(float64(tx[i]-port.LastTxBytes) / secondsDelta)
+		port.Rx = uint(float64(rx[i]-port.LastRx) / secondsDelta)
+		port.Tx = uint(float64(tx[i]-port.LastTx) / secondsDelta)
 
-		port.LastRxBytes = rx[i]
-		port.LastTxBytes = tx[i]
+		port.LastRx = rx[i]
+		port.LastTx = tx[i]
 
 		port.LastUpdate = updateTime
 	}
