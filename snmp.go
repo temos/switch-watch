@@ -91,8 +91,8 @@ func UpdateRxTx(snmp *gosnmp.GoSNMP, ports []*Port) error {
 
 	for i, port := range ports {
 		secondsDelta := updateTime.Sub(port.LastUpdate).Seconds()
-		port.Rx = uint(float64(rx[i]-port.LastRx) / secondsDelta)
-		port.Tx = uint(float64(tx[i]-port.LastTx) / secondsDelta)
+		port.Rx = uint(float64(diffWithWrap(port.LastRx, rx[i])) / secondsDelta)
+		port.Tx = uint(float64(diffWithWrap(port.LastTx, tx[i])) / secondsDelta)
 
 		port.LastRx = rx[i]
 		port.LastTx = tx[i]
@@ -110,4 +110,16 @@ func GetHostname(snmp *gosnmp.GoSNMP) (string, error) {
 	}
 
 	return string(result.Variables[0].Value.([]byte)), err
+}
+
+// calculates the difference between a base value and a new value accounting for counter wrapping
+func diffWithWrap(base, new uint) uint {
+	if new >= base {
+		//no wrap
+		return new - base
+	}
+
+	//wrap
+	const MaxUint = ^uint(0)
+	return (MaxUint - base) + new
 }
