@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	RefreshDelay = time.Second * 3
+	RefreshDelay = time.Second * 2
 )
 
 const (
@@ -37,43 +37,19 @@ func main() {
 	target := os.Args[1]
 	community := os.Args[2]
 
-	snmp := gosnmp.GoSNMP{
-		Target:    target,
-		Port:      161,
-		Timeout:   time.Second * 2,
-		Retries:   2,
-		MaxOids:   64,
-		Community: community,
-		Version:   gosnmp.Version2c,
-	}
-	err := snmp.Connect()
+	snmp, hostname, ports, err := detect(target, community)
 	if err != nil {
-		fmt.Println("failed to connect to snmp: " + err.Error())
+		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	fmt.Println("getting hostname")
-	hostname, err := GetHostname(&snmp)
-	if err != nil {
-		fmt.Println("failed to get hostname: " + err.Error())
-		os.Exit(1)
-	}
-
-	fmt.Println("detecting ports")
-	ports, err := DetectPorts(&snmp)
-	if err != nil {
-		fmt.Println("failed to detect ports: " + err.Error())
-		os.Exit(1)
-	}
-
-	fmt.Println("Waiting for data")
+	defer snmp.Conn.Close()
 
 	app, updateUI := createApp(target, hostname, ports)
 
 	go func() {
 		for {
 			time.Sleep(RefreshDelay)
-			if err := UpdateRxTx(&snmp, ports); err != nil {
+			if err := UpdateRxTx(snmp, ports); err != nil {
 				fmt.Print(EscEraseScreen)
 				fmt.Println("failed to update RX/TX: " + err.Error())
 				os.Exit(1)
@@ -86,4 +62,35 @@ func main() {
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
+}
+
+func detect(target string, community string) (*gosnmp.GoSNMP, string, []*Port, error) {
+	snmp := gosnmp.GoSNMP{
+		Target:    target,
+		Port:      161,
+		Timeout:   time.Second * 2,
+		Retries:   2,
+		MaxOids:   64,
+		Community: community,
+		Version:   gosnmp.Version2c,
+	}
+
+	err := snmp.Connect()
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("failed to connect to snmp: %w", err)
+	}
+
+	fmt.Println("getting hostname")
+	hostname, err := GetHostname(&snmp)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("failed to get hostname: %w", err)
+	}
+
+	fmt.Println("detecting ports")
+	ports, err := DetectPorts(&snmp)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("failed to detect ports: %w", err)
+	}
+
+	return &snmp, hostname, ports, nil
 }

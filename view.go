@@ -10,23 +10,13 @@ import (
 func createApp(target string, hostname string, ports []*Port) (*tview.Application, func()) {
 	table := tview.NewTable()
 	table.
-		SetBorders(false).
 		SetBorderPadding(0, 0, 2, 2).
 		SetBorder(true).
 		SetTitleAlign(tview.AlignLeft).
 		SetTitleColor(tcell.ColorGreen).
 		SetTitle(fmt.Sprintf(" Monitoring %s (%s) ", target, hostname))
 
-	table.
-		InsertRow(0).
-		InsertColumn(0).
-		InsertColumn(0).
-		InsertColumn(0)
-
-	table.SetCell(0, 0, tview.NewTableCell("Port").SetTextColor(tcell.ColorYellow))
-	table.SetCell(0, 1, tview.NewTableCell("Alias").SetTextColor(tcell.ColorYellow))
-	table.SetCell(0, 2, tview.NewTableCell("RX").SetTextColor(tcell.ColorYellow))
-	table.SetCell(0, 3, tview.NewTableCell("TX").SetTextColor(tcell.ColorYellow))
+	setupHeader(table, "Port", "Alias", "RX", "TX")
 
 	for i, port := range ports {
 		row := i + 1
@@ -49,6 +39,14 @@ func createApp(target string, hostname string, ports []*Port) (*tview.Applicatio
 	}
 
 	return app, update
+}
+
+func setupHeader(table *tview.Table, headings ...string) {
+	table.InsertRow(0)
+	for i := 0; i < len(headings); i++ {
+		table.InsertColumn(i)
+		table.SetCell(0, i, tview.NewTableCell(headings[i]).SetTextColor(tcell.ColorYellow))
+	}
 }
 
 func toReadable(speed uint) string {
