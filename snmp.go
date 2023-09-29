@@ -75,7 +75,7 @@ func GetRxTx(snmp *gosnmp.GoSNMP) ([]uint, []uint, time.Time, error) {
 	rx := make([]uint, len(rxResult))
 	tx := make([]uint, len(txResult))
 	for i := range rx {
-		//'* 8' to convert from octet (bytes) to bits
+		//'* 8' to convert from octets (bytes) to bits
 		rx[i] = rxResult[i].Value.(uint) * 8
 		tx[i] = txResult[i].Value.(uint) * 8
 	}
