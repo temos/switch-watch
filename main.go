@@ -13,9 +13,11 @@ const (
 )
 
 const (
-	EscMoveHome        = "\x1b[H"
-	EscEraseRestOfLine = "\x1b[0K"
-	EscEraseScreen     = "\x1b[2J"
+	EscMoveHome                  = "\x1b[H"
+	EscEraseRestOfLine           = "\x1b[0K"
+	EscEraseScreen               = "\x1b[2J"
+	EscSwitchToAlternateScreen   = "\x1b[?1049h"
+	EscSwitchFromAlternateScreen = "\x1b[?1049l"
 )
 
 type Port struct {
@@ -36,6 +38,9 @@ func main() {
 
 	target := os.Args[1]
 	community := os.Args[2]
+
+	fmt.Print(EscSwitchToAlternateScreen, EscEraseScreen, EscMoveHome)
+	defer fmt.Print(EscSwitchFromAlternateScreen)
 
 	snmp, hostname, ports, err := detect(target, community)
 	if err != nil {
