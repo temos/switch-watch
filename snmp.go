@@ -120,6 +120,6 @@ func diffWithWrap(base, new uint) uint {
 	}
 
 	//wrap
-	const MaxUint = ^uint(0)
-	return (MaxUint - base) + new
+	const MaxUint32 = uint(^uint32(0))
+	return (MaxUint32 - base) + new
 }
