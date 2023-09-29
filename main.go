@@ -21,13 +21,13 @@ const (
 )
 
 type Port struct {
-	Name       string
-	Alias      string
-	Tx         uint
-	Rx         uint
-	LastTx     uint
-	LastRx     uint
-	LastUpdate time.Time
+	Name        string
+	Alias       string
+	TxBytes     uint
+	RxBytes     uint
+	LastTxBytes uint
+	LastRxBytes uint
+	LastUpdate  time.Time
 }
 
 func main() {

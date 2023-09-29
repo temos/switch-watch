@@ -31,8 +31,8 @@ func createApp(target string, hostname string, ports []*Port) (*tview.Applicatio
 	update := func() {
 		for i, port := range ports {
 			row := i + 1
-			table.GetCell(row, 2).SetText(toReadable(port.Rx))
-			table.GetCell(row, 3).SetText(toReadable(port.Tx))
+			table.GetCell(row, 2).SetText(toReadable(port.RxBytes * 8))
+			table.GetCell(row, 3).SetText(toReadable(port.TxBytes * 8))
 		}
 
 		app.Draw()

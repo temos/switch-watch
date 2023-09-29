@@ -46,11 +46,11 @@ func DetectPorts(snmp *gosnmp.GoSNMP) ([]*Port, error) {
 
 	for i := range ports {
 		ports[i] = &Port{
-			Name:       string(ifacesResult[i].Value.([]byte)),
-			Alias:      string(aliasesResult[i].Value.([]byte)),
-			LastTx:     tx[i],
-			LastRx:     rx[i],
-			LastUpdate: updateTime,
+			Name:        string(ifacesResult[i].Value.([]byte)),
+			Alias:       string(aliasesResult[i].Value.([]byte)),
+			LastTxBytes: tx[i],
+			LastRxBytes: rx[i],
+			LastUpdate:  updateTime,
 		}
 	}
 
@@ -75,9 +75,8 @@ func GetRxTx(snmp *gosnmp.GoSNMP) ([]uint, []uint, time.Time, error) {
 	rx := make([]uint, len(rxResult))
 	tx := make([]uint, len(txResult))
 	for i := range rx {
-		//'* 8' to convert from octets (bytes) to bits
-		rx[i] = rxResult[i].Value.(uint) * 8
-		tx[i] = txResult[i].Value.(uint) * 8
+		rx[i] = rxResult[i].Value.(uint)
+		tx[i] = txResult[i].Value.(uint)
 	}
 
 	return rx, tx, time.Now(), nil
@@ -91,11 +90,11 @@ func UpdateRxTx(snmp *gosnmp.GoSNMP, ports []*Port) error {
 
 	for i, port := range ports {
 		secondsDelta := updateTime.Sub(port.LastUpdate).Seconds()
-		port.Rx = uint(float64(diffWithWrap(port.LastRx, rx[i])) / secondsDelta)
-		port.Tx = uint(float64(diffWithWrap(port.LastTx, tx[i])) / secondsDelta)
+		port.RxBytes = uint(float64(diffWithWrap(port.LastRxBytes, rx[i])) / secondsDelta)
+		port.TxBytes = uint(float64(diffWithWrap(port.LastTxBytes, tx[i])) / secondsDelta)
 
-		port.LastRx = rx[i]
-		port.LastTx = tx[i]
+		port.LastRxBytes = rx[i]
+		port.LastTxBytes = tx[i]
 
 		port.LastUpdate = updateTime
 	}
