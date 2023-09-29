@@ -1,0 +1,104 @@
+package main
+
+import (
+	"time"
+
+	"github.com/gosnmp/gosnmp"
+)
+
+const (
+	//https://oidref.com/1.3.6.1.2.1.2.2.1.2
+	OIDifDescr = ".1.3.6.1.2.1.2.2.1.2"
+
+	//https://oidref.com/1.3.6.1.2.1.2.2.1.10
+	OIDifInOctets = ".1.3.6.1.2.1.2.2.1.10"
+
+	//https://oidref.com/1.3.6.1.2.1.2.2.1.16
+	OIDifOutOctets = ".1.3.6.1.2.1.2.2.1.16"
+
+	//https://oidref.com/1.3.6.1.2.1.1.5
+	//the zero at the end is required
+	OIDsysName = "1.3.6.1.2.1.1.5.0"
+)
+
+var zeroTime time.Time
+
+func DetectPorts(snmp *gosnmp.GoSNMP) ([]*Port, error) {
+	result, err := snmp.BulkWalkAll(OIDifDescr)
+	if err != nil {
+		return nil, err
+	}
+
+	rx, tx, updateTime, err := GetRxTx(snmp)
+	if err != nil {
+		return nil, err
+	}
+
+	ports := make([]*Port, len(result))
+
+	for i := range ports {
+		ports[i] = &Port{
+			Name:        string(result[i].Value.([]byte)),
+			LastTxBytes: tx[i],
+			LastRxBytes: rx[i],
+			LastUpdate:  updateTime,
+		}
+	}
+
+	return ports, nil
+}
+
+func GetRxTx(snmp *gosnmp.GoSNMP) ([]uint, []uint, time.Time, error) {
+	rxResult, err := snmp.BulkWalkAll(OIDifInOctets)
+	if err != nil {
+		return nil, nil, zeroTime, err
+	}
+
+	txResult, err := snmp.BulkWalkAll(OIDifOutOctets)
+	if err != nil {
+		return nil, nil, zeroTime, err
+	}
+
+	if len(rxResult) != len(txResult) {
+		panic("expected RX and TX results to have the same length")
+	}
+
+	rx := make([]uint, len(rxResult))
+	tx := make([]uint, len(txResult))
+	for i := range rx {
+		//'* 8' to convert from octet (bytes) to bits
+		rx[i] = rxResult[i].Value.(uint) * 8
+		tx[i] = txResult[i].Value.(uint) * 8
+	}
+
+	return rx, tx, time.Now(), nil
+}
+
+func UpdateRxTx(snmp *gosnmp.GoSNMP, ports []*Port) error {
+	rx, tx, updateTime, err := GetRxTx(snmp)
+	if err != nil {
+		return err
+	}
+
+	for i, port := range ports {
+		secondsDelta := updateTime.Sub(port.LastUpdate).Seconds()
+		port.Rx = uint(float64(rx[i]-port.LastRxBytes) / secondsDelta)
+		port.Tx = uint(float64(tx[i]-port.LastTxBytes) / secondsDelta)
+
+		port.LastRxBytes = rx[i]
+		port.LastTxBytes = tx[i]
+
+		port.LastUpdate = updateTime
+	}
+
+	return nil
+}
+
+func GetHostname(snmp *gosnmp.GoSNMP) (string, error) {
+	result, err := snmp.Get([]string{OIDsysName})
+	if err != nil {
+		return "", err
+	}
+
+	return string(result.Variables[0].Value.([]byte)), err
+}
