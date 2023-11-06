@@ -39,15 +39,15 @@ func main() {
 	target := os.Args[1]
 	community := os.Args[2]
 
-	fmt.Print(EscSwitchToAlternateScreen, EscEraseScreen, EscMoveHome)
-	defer fmt.Print(EscSwitchFromAlternateScreen)
-
 	snmp, hostname, ports, err := detect(target, community)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	defer snmp.Conn.Close()
+
+	fmt.Print(EscSwitchToAlternateScreen, EscEraseScreen, EscMoveHome)
+	defer fmt.Print(EscSwitchFromAlternateScreen)
 
 	app, updateUI := createApp(target, hostname, ports)
 
