@@ -17,7 +17,7 @@ const (
 	OIDifOutOctets = ".1.3.6.1.2.1.2.2.1.16"
 
 	//https://oidref.com/1.3.6.1.2.1.1.5
-	//the zero at the end is required even though it's not part of the OID
+	// the zero at the end is required even though it's not part of the OID
 	OIDsysName = "1.3.6.1.2.1.1.5.0"
 
 	//https://oidref.com/1.3.6.1.2.1.31.1.1.1.18.0
@@ -114,11 +114,11 @@ func GetHostname(snmp *gosnmp.GoSNMP) (string, error) {
 // calculates the difference between a base value and a new value accounting for counter wrapping
 func diffWithWrap(base, new uint) uint {
 	if new >= base {
-		//no wrap
+		// no wrap
 		return new - base
 	}
 
-	//wrap
+	// wrap
 	const MaxUint32 = uint(^uint32(0))
 	return (MaxUint32 - base) + new
 }
