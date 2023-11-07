@@ -1,4 +1,4 @@
-module switch-watch
+module github.com/temos/switch-watch
 
 go 1.21.1
 
